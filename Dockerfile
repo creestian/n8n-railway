@@ -1,25 +1,24 @@
 # Use official n8n image
 FROM n8nio/n8n:latest
 
-# --- Copy entrypoint that adapts to Railway ($PORT / $RAILWAY_STATIC_URL)
+# Work as root to set up files/permissions
 USER root
+
+# Copy your entrypoint that adapts PORT/WEBHOOK_URL for Railway
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && chown node:node /docker-entrypoint.sh
 
-# --- Ensure the persistent data dir exists and is owned by node
+# Ensure the data dir exists and is owned by node (Railway will mount over it)
 RUN mkdir -p /home/node/.n8n && chown -R node:node /home/node/.n8n
 
 # Drop privileges
 USER node
 
-# --- Sensible defaults; override via Railway env vars
+# Defaults (can be overridden by Railway env vars)
 ENV N8N_LISTEN_ADDRESS=0.0.0.0 \
     N8N_PROTOCOL=http \
     N8N_PORT=5678 \
     TZ=America/Argentina/Buenos_Aires
-
-# Hint to orchestrators that this path should be persisted
-VOLUME ["/home/node/.n8n"]
 
 EXPOSE 5678
 
