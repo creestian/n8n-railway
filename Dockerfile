@@ -1,19 +1,22 @@
-FROM node:18-alpine
-
-ARG N8N_VERSION=1.106.3
-
-RUN apk add --update graphicsmagick tzdata
+# Use official n8n image
+FROM n8nio/n8n:latest
 
 USER root
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chown node:node /docker-entrypoint.sh
 
-RUN apk --update add --virtual build-dependencies python3 build-base && \
-    npm_config_user=root npm install --location=global n8n@${N8N_VERSION} && \
-    apk del build-dependencies
+# Drop back to non-root user
+USER node
 
-WORKDIR /data
+ENV N8N_LISTEN_ADDRESS=0.0.0.0 \
+    N8N_PROTOCOL=http \
+    N8N_PORT=5678 \
+    TZ=America/Argentina/Buenos_Aires
 
-EXPOSE $PORT
+EXPOSE 5678
 
-ENV N8N_USER_ID=root
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get({host:'127.0.0.1',port:process.env.N8N_PORT||5678,path:'/healthz'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
-CMD export N8N_PORT=$PORT && n8n start
+ENTRYPOINT ["/docker-entrypoint.sh"]
