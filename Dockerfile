@@ -1,8 +1,12 @@
-# Use official n8n image
-FROM n8nio/n8n:latest
+FROM node:18-alpine
+
+ARG N8N_VERSION=1.106.3
+
+RUN apk add --update graphicsmagick tzdata
 
 # Work as root to set up files/permissions
 USER root
+<<<<<<< HEAD
 
 # Copy your entrypoint that adapts PORT/WEBHOOK_URL for Railway
 COPY docker-entrypoint.sh /docker-entrypoint.sh
@@ -19,11 +23,23 @@ ENV N8N_LISTEN_ADDRESS=0.0.0.0 \
     N8N_PROTOCOL=http \
     N8N_PORT=5678 \
     TZ=America/Argentina/Buenos_Aires
+=======
 
-EXPOSE 5678
+RUN apk --update add --virtual build-dependencies python3 build-base && \
+    npm_config_user=root npm install --location=global n8n@${N8N_VERSION} && \
+    apk del build-dependencies
 
+WORKDIR /data
+>>>>>>> parent of f2e2cdb (Merge branch 'main' of https://github.com/creestian/n8n-railway)
+
+EXPOSE $PORT
+
+<<<<<<< HEAD
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get({host:'127.0.0.1',port:process.env.N8N_PORT||process.env.PORT||5678,path:'/healthz'},res=>process.exit(res.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+=======
+ENV N8N_USER_ID=root
+>>>>>>> parent of f2e2cdb (Merge branch 'main' of https://github.com/creestian/n8n-railway)
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD export N8N_PORT=$PORT && n8n start
